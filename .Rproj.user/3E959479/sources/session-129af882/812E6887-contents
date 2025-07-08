@@ -1,0 +1,6 @@
+example_ids <- prot.cor %>% select(Gene, Loadings.PC1) %>% arrange(desc(abs(Loadings.PC1))) %>% slice(1:100) %>% pull(Gene) %>% str_c(collapse=", ")
+
+df.ann <- metadata %>%
+  select(Model.detailed,Cell.line) %>%
+  distinct() %>%
+  mutate(Group = colnames(prot.means))
