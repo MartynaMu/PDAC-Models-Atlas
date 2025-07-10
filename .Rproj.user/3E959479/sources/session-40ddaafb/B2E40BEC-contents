@@ -9,12 +9,14 @@ ui <- fluidPage(
     tabsetPanel(
       tabPanel("PCAplots",
                plotlyOutput("screeplot", height = 350, width = "50%"),
+               plotOutput("eigen", width = "50%"),
                selectInput("x_pc", "X axis PC", choices = colnames(p$rotated), selected = "PC1"),selectInput("y_pc", "Y axis PC", choices = colnames(p$rotated), selected = "PC2"),
-               plotlyOutput("PCAplot", width = "50%")
+               plotlyOutput("PCAplot", width = "50%"),
+               plotlyOutput("loadplot", width = "50%")
       ),
       tabPanel(
-        "PC and classification correlation",
-        plotOutput("eigen", width = "50%")
+        "..............",
+
       ),
       tabPanel(
         "Heatmap",
@@ -27,14 +29,7 @@ ui <- fluidPage(
           )
         ),
         actionButton("plot_btn", "Plot Heatmap"),
-        fluidRow(
-          column(6,
-                 plotlyOutput("hm_plot_prot")
-          ),
-          column(6,
-                 plotlyOutput("hm_plot_rna")
-          )
-        ),
+        plotlyOutput("hm_plot"),
         textOutput("not_found")
       )
     )
@@ -45,6 +40,28 @@ server <- function(input, output, session) {
   
   prot.means <- read.csv("../RR_proteomics/data/output/prot-means.csv") %>% column_to_rownames("Genes")
   rna.means <- read.csv("../RR_proteomics/data/output/rna-means.csv") %>% column_to_rownames("Genes")
+  colnames(rna.means) <- colnames(rna.means) %>% str_sub(start = 5)
+  
+  
+  output$screeplot <- renderPlotly({
+    screeplot <- screeplot(p, components = paste0("PC", 1:10), title = "Variance explained, PC1-10")
+    ggplotly(screeplot, tooltip = "y")
+  })
+  
+  output$eigen <- renderPlot({
+    eigencorplot(p, 
+                 metavars = colnames(metadata),
+                 rotLabX = 45,
+                 col = c('blue2', 'black', 'red2'),
+                 colCorval = 'white',
+                 main = "Global proteome PC correlation to sample classification",
+                 posColKey = "top",
+                 colFrame = "white",
+                 cexMain = 1.7,
+                 cexCorval = 1.1,
+                 fontCorval = 2,
+                 components = paste0("PC", c(1:10)))
+  })
   
   output$PCAplot <- renderPlotly({
     
@@ -67,25 +84,30 @@ server <- function(input, output, session) {
     ggplotly(plot, tooltip = "text") %>%
       layout(legend = list(traceorder="grouped"))
   })
-  
-  output$screeplot <- renderPlotly({
-    screeplot <- screeplot(p, components = paste0("PC", 1:10), title = "Variance explained, PC1-10")
-    ggplotly(screeplot, tooltip = "y")
-  })
-  
-  output$eigen <- renderPlot({
-    eigencorplot(p, 
-                 metavars = colnames(metadata),
-                 rotLabX = 45,
-                 col = c('blue2', 'black', 'red2'),
-                 colCorval = 'white',
-                 main = "Global proteome PC correlation to sample classification",
-                 posColKey = "top",
-                 colFrame = "white",
-                 cexMain = 1.7,
-                 cexCorval = 1.1,
-                 fontCorval = 2,
-                 components = paste0("PC", c(1:10)))
+
+  output$loadplot <- renderPlotly({
+    
+    x <- input$x_pc |> paste0("$")
+    y <- input$y_pc |> paste0("$")
+    
+    (p$loadings %>% 
+        select(matches(c(x,y))) %>% 
+        rownames_to_column("Genes") %>%
+        pivot_longer(2:3, 
+                     names_to = "PC",
+                     values_to = "Component.loading") %>%
+        filter(abs(Component.loading) > 0.01) %>%
+        ggplot(aes(x=Component.loading,
+                   y=PC,
+                   fill=Component.loading,
+                   text=Genes))+
+        geom_point(size=7)+
+        geom_hline(yintercept = 0, linetype=2)+
+        geom_vline(xintercept = 0, linetype=2)+
+        scale_fill_distiller(palette = "RdBu")+
+        labs(title=paste0(input$x_pc, ", ", input$y_pc, " loadings,\nabsolute value > 0.01"))
+    ) %>% 
+      ggplotly(tooltip = c("x", "text"))
   })
   
   selected_proteins <- eventReactive(input$plot_btn, {
@@ -191,12 +213,25 @@ server <- function(input, output, session) {
             nrows=3, 
             shareX = TRUE,
             shareY = TRUE,
-            heights = c(ann_prop, ann_prop, hm_prop), 
-            margin = c(0,.5,0,0)) %>%
+            heights = c(ann_prop, ann_prop, hm_prop),
+            margin = 0) %>%
       layout(height = plot_height,
              xaxis = list(title = "",
                           tickangle = 45),
-             yaxis = list(title = ""))
+             xaxis2 = list(title = "",
+                          tickangle = 45),
+             yaxis = list(title = ""),
+             yaxis2 = list(title = ""),
+             annotations = list(
+               list(
+                 x = 7.5, y = 2, text = "First Heatmap", showarrow = FALSE, align = "center",
+                 xref = "x0", yref = "paper", font = list(size = 16)
+               ),
+               list(
+                 x2 = 7.5, y = 1, text = "Second Heatmap", showarrow = FALSE, align = "center",
+                 xref = "x2", yref = "paper", font = list(size = 16)
+               )
+             ))
     
   })
   
