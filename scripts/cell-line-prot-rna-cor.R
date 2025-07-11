@@ -1,7 +1,4 @@
 # calculate crrelation condition-wise
-colnames(df.rna) <- colnames(df.rna) %>%
-  str_sub(start=5)
-
 union <- intersect(rownames(df.rna), rownames(qnorm))
 
 prot.cor.prep <- as.data.frame(qnorm) %>%

@@ -1,0 +1,52 @@
+temp <- prot.means %>% 
+  scale() %>%
+  as.data.frame() %>%
+  rownames_to_column("Genes") %>% 
+  pivot_longer(2:16,
+               names_to = "Group",
+               values_to = "Intensity")
+
+cor.mat.L <- cor.mat %>% 
+  arrange(Genes) %>% 
+  pivot_longer(1:3,
+               names_to = "Cell.line", 
+               values_to = "Cell.line.corr") %>%
+  arrange(Genes, Cell.line)
+
+temp <- temp %>% 
+  mutate(Cell.line = case_when(
+    str_detect(Group, "PANC") ~ "PANC",
+    str_detect(Group, "MIAPACA") ~ "MIAPACA",
+    str_detect(Group, "CFPAC") ~ "CFPAC"
+  ))
+
+temp <- temp |> 
+  left_join(select(cor.mat.L,-Cell.line.Var),
+            by = join_by(Genes, Cell.line)) 
+(temp %>% 
+    slice(1:500) %>%
+    ggplot(aes(x=Genes,
+               y=Group,
+               fill=Intensity,
+               size=Cell.line.corr))+
+    geom_point()+
+    scale_fill_distiller(palette = "RdBu")+
+    labs(x=FALSE, y=FALSE)+
+    theme(axis.text.x = element_text(angle=45))) |> 
+  ggplotly()
+
+(temp %>% 
+  slice(1:500) %>%
+  ggplot(aes(x=Genes,
+             y=Group,
+             fill=Intensity,
+             size=Cell.line.corr))+
+  geom_point()+
+  scale_fill_distiller(palette = "RdBu")+
+  labs(x=NULL, y=NULL)+
+  theme(axis.text.x = element_text(angle=45))+
+  annotate("rect", xmin=-0.5,xmax=-1, ymin=c(0.5,5.5,10.5), ymax=c(5.5,10.5,15.5), 
+           fill = c("#E64B35FF", "#4DBBD5FF", "#00A087FF"))) |>
+  ggplotly()
+
+

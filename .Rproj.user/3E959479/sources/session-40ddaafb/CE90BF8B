@@ -1,0 +1,26 @@
+{
+    "id": "CE90BF8B",
+    "path": "D:/R_projects/PDAC-in-vitro-models-atlas/scripts/pca-theme.R",
+    "project_path": "scripts/pca-theme.R",
+    "type": "r_source",
+    "hash": "2897792490",
+    "contents": "",
+    "dirty": false,
+    "created": 1752177487360.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "43,1",
+        "scrollLine": "0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1752157026,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1752157026,
+    "read_only": false,
+    "read_only_alternatives": []
+}
