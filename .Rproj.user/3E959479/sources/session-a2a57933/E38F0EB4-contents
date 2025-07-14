@@ -1,0 +1,64 @@
+# calculate crrelation condition-wise
+union <- intersect(rownames(df.rna), rownames(qnorm))
+
+prot.cor.prep <- as.data.frame(qnorm) %>%
+  filter(rownames(qnorm) %in% union)
+
+rna.cor.prep <- df.rna %>%
+  filter(rownames(df.rna) %in% union)
+
+group.str <- paste0(c("PANC", "MIAPACA", "CFPAC"), ".+[1-3]$")
+
+cor.mat <- matrix(nrow = length(union), ncol=1) %>% as.data.frame()
+for (g in group.str) {
+  temp.col <- c()
+  for (i in 1:length(union)) {
+      
+    prot.1 <- prot.cor.prep %>%
+      slice(i) %>%
+      select(matches(g)) %>%
+      t() %>%
+      as.data.frame() %>%
+      pull()
+    
+    
+    rna.1 <- rna.cor.prep %>%
+      slice(i) %>%
+      select(matches(g)) %>%
+      t() %>%
+      as.data.frame() %>%
+      pull()
+    
+    prot.rna.cor <- cor(prot.1, rna.1, use = "pairwise.complete.obs", method = "pearson")
+    temp.col <- c(temp.col, prot.rna.cor)
+  }
+  cor.mat <- cbind(cor.mat, temp.col)
+}
+
+colnames(cor.mat) <- c("V1", "PANC", "MIAPACA", "CFPAC")
+cor.mat <- select(cor.mat, -1)
+rownames(cor.mat) <- union
+
+# Which gene expression regulation changes the most between cell lines and which gene mRNA and protein is correlated?
+cor.mat <- cor.mat %>% 
+  rowwise() %>% 
+  mutate(Cell.line.Var = var(c_across(everything())))
+
+cor.mat <- cbind(cor.mat,Genes = union)
+cor.mat <- cor.mat %>% 
+  arrange(desc(Cell.line.Var))
+
+poi <- cor.mat %>% 
+  filter(if_any(1:3, ~ abs(.x) > 0.55) & Cell.line.Var > 0.3)
+
+poi %>%
+  slice(1:200) %>%
+  pivot_longer(1:3,
+               names_to = "Cell.line",
+               values_to = "prot.mRNA.corr") %>%
+  ggplot(aes(x = Cell.line,
+             y = Genes,
+             color = prot.mRNA.corr,
+             size = Cell.line.Var)) +
+  geom_point()+
+  scale_color_distiller(palette = "RdBu")

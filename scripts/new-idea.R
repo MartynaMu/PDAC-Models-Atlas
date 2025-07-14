@@ -1,4 +1,5 @@
 library(shiny)
+library(tidyverse)
 library(bslib)
 library(plotly)
 library(PCAtools)
@@ -15,24 +16,25 @@ ui <- fluidPage(
                plotlyOutput("loadplot", width = "50%")
       ),
       tabPanel("Explore",
+               fluidRow(
+                 column(3,
+                        textInput("protein_ids", "Enter protein IDs (comma-separated):", value = example_ids)
+                 ),
+                 column(3,
+                        fileInput("protein_file", "Or upload protein IDs file (.txt):", accept = c(".txt"))
+                 )
+               ),
+               actionButton("plot_btn", "Plot Heatmap"),
                tags$div(
                  style = "width: 1200px; overflow-x: scroll;",
-                 plotlyOutput("dotplot", width = "2000px", height = "600px")
-               )
+                 plotlyOutput("dotplot", height = "600px")
+               ),
+               textOutput("not_found")
       ),
       tabPanel(
         "Heatmap",
-        fluidRow(
-          column(3,
-                 textInput("protein_ids", "Enter protein IDs (comma-separated):", value = example_ids)
-          ),
-          column(3,
-                 fileInput("protein_file", "Or upload protein IDs file (.txt):", accept = c(".txt"))
-          )
-        ),
-        actionButton("plot_btn", "Plot Heatmap"),
         plotlyOutput("hm_plot"),
-        textOutput("not_found")
+
       )
     )
   )
@@ -112,35 +114,6 @@ server <- function(input, output, session) {
       ggplotly(tooltip = c("x", "text"))
   })
   
-  selected_proteins <- eventReactive(input$plot_btn, {
-    # Read protein IDs from file if uploaded
-    file_ids <- NULL
-    if (!is.null(input$protein_file)) {
-      file_content <- readLines(input$protein_file$datapath)
-      # Assume one protein ID per line, trim whitespace
-      file_ids <- trimws(file_content)
-    }
-    
-    # If file IDs exist and not empty, use them; else use text input
-    ids <- if (!is.null(file_ids) && length(file_ids) > 0) {
-      file_ids
-    } else {
-      trimws(unlist(strsplit(input$protein_ids, ",")))
-    }
-    
-    found <- ids[ids %in% rownames(prot.means)]
-    not_found <- ids[!ids %in% rownames(prot.means)]
-    list(found = found, not_found = not_found)
-  })
-  
-  
-  output$not_found <- renderText({
-    nf <- selected_proteins()$not_found
-    if (length(nf) > 0) {
-      paste("Not found:", paste(nf, collapse = ", "))
-    }
-  })
-  
   ## HEATMAPS-------------------------------------------------------------------
   
   p_ann1 <- (ggplot(df.ann, aes(x=Group, y = .1, fill=Cell.line)) + 
@@ -158,10 +131,6 @@ server <- function(input, output, session) {
   ### PROT HM----------------------------------------------------------------------
   
   output$hm_plot <- renderPlotly({
-    req(length(selected_proteins()$found) > 0)
-    mat <- prot.means[selected_proteins()$found, , drop = FALSE]
-    
-    n_proteins <- nrow(mat)
     
     mat.L <- mat %>% 
       scale() %>%
@@ -199,21 +168,84 @@ server <- function(input, output, session) {
     
   })
   
+  selected_proteins <- eventReactive(input$plot_btn, {
+    # Read protein IDs from file if uploaded
+    file_ids <- NULL
+    if (!is.null(input$protein_file)) {
+      file_content <- readLines(input$protein_file$datapath)
+      # Assume one protein ID per line, trim whitespace
+      file_ids <- trimws(file_content)
+    }
+    
+    # If file IDs exist and not empty, use them; else use text input
+    ids <- if (!is.null(file_ids) && length(file_ids) > 0) {
+      file_ids
+    } else {
+      trimws(unlist(strsplit(input$protein_ids, ",")))
+    }
+    
+    found <- ids[ids %in% rownames(prot.means)]
+    not_found <- ids[!ids %in% rownames(prot.means)]
+    list(found = found, not_found = not_found)
+  })
+  
+  
+  output$not_found <- renderText({
+    nf <- selected_proteins()$not_found
+    if (length(nf) > 0) {
+      paste("Not found:", paste(nf, collapse = ", "))
+    }
+  })
+  
   output$dotplot <- renderPlotly({
     
-    (temp %>% 
-       slice(1:500) %>%
+    req(length(selected_proteins()$found) > 0)
+    mat <- int.cor.L %>% 
+      filter(Genes %in% selected_proteins()$found)
+    
+    n_proteins <- mat %>%
+      select(Genes) %>%
+      n_distinct()
+    
+    hm_width = n_proteins * 20
+    plot_width = hm_width + 150
+    limit <- mat$Intensity.z.score %>%
+      range() %>%
+      abs() %>%
+      max()
+    
+    (mat %>%
        ggplot(aes(x=Genes,
                   y=Group,
-                  fill=Intensity,
-                  size=Cell.line.corr))+
-       geom_point()+
-       scale_fill_distiller(palette = "RdBu")+
-       labs(x=NULL, y=NULL)+
-       theme(axis.text.x = element_text(angle=45))+
-       annotate("rect", xmin=-0.5,xmax=-1, ymin=c(0.5,5.5,10.5), ymax=c(5.5,10.5,15.5), 
-                fill = c("#E64B35FF", "#4DBBD5FF", "#00A087FF"))) |>
-      ggplotly()
+                  fill=Intensity.z.score,
+                  size=abs(Cell.line.corr),
+                  text=paste0(
+                    Genes,"<br>",
+                    Group, "<br>",
+                    "Log2 Intensity: ", round(Intensity,2), "<br>",
+                    "Cell-line protein-mRNA \nPearson correlation: ", round(Cell.line.corr,2)
+                  )
+                  )
+              )+
+        geom_point()+
+        geom_hline(yintercept = c(5.5,10.5), linetype=2)+
+        scale_fill_distiller(palette = "RdBu",
+                             limit=c(-limit,limit))+
+        labs(x=NULL, 
+             y=NULL,
+             fill = "Intensity \nz-score")+
+        theme(axis.text.x = element_text(angle=45))+
+        annotate("rect", 
+                 xmin=0,
+                 xmax=-1, 
+                 ymin=c(0,5.5,10.5), 
+                 ymax=c(5.5,10.5,16), 
+                 fill = RColorBrewer::brewer.pal("Greys", n=3), 
+                 color="black")) |>
+      ggplotly(width = plot_width,
+               tooltip="text") |>
+      layout(legend=list(
+        x = 0, y = 1, xanchor = "left", yanchor = "top"))
     
   })
   

@@ -1,0 +1,7 @@
+pheatmap::pheatmap(prot.means, 
+                   scale="row", 
+                   clustering_distance_cols = "correlation", 
+                   clustering_distance_rows = "correlation", 
+                   clustering_method = "complete", 
+                   show_rownames = FALSE,
+                   col=colorRampPalette(c("blue","white","red"))(100))

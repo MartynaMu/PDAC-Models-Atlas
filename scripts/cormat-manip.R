@@ -4,7 +4,7 @@ temp <- prot.means %>%
   rownames_to_column("Genes") %>% 
   pivot_longer(2:16,
                names_to = "Group",
-               values_to = "Intensity")
+               values_to = "Intensity.z.score")
 
 cor.mat.L <- cor.mat %>% 
   arrange(Genes) %>% 
@@ -23,30 +23,55 @@ temp <- temp %>%
 temp <- temp |> 
   left_join(select(cor.mat.L,-Cell.line.Var),
             by = join_by(Genes, Cell.line)) 
-(temp %>% 
-    slice(1:500) %>%
-    ggplot(aes(x=Genes,
-               y=Group,
-               fill=Intensity,
-               size=Cell.line.corr))+
-    geom_point()+
-    scale_fill_distiller(palette = "RdBu")+
-    labs(x=FALSE, y=FALSE)+
-    theme(axis.text.x = element_text(angle=45))) |> 
-  ggplotly()
 
-(temp %>% 
-  slice(1:500) %>%
-  ggplot(aes(x=Genes,
-             y=Group,
-             fill=Intensity,
-             size=Cell.line.corr))+
-  geom_point()+
-  scale_fill_distiller(palette = "RdBu")+
-  labs(x=NULL, y=NULL)+
-  theme(axis.text.x = element_text(angle=45))+
-  annotate("rect", xmin=-0.5,xmax=-1, ymin=c(0.5,5.5,10.5), ymax=c(5.5,10.5,15.5), 
-           fill = c("#E64B35FF", "#4DBBD5FF", "#00A087FF"))) |>
-  ggplotly()
+temp2 <- prot.means %>% 
+  rownames_to_column("Genes") %>% 
+  pivot_longer(2:16,
+               names_to = "Group",
+               values_to = "Intensity")
+
+temp <- temp |> left_join(temp2, by = join_by(Genes, Group))
+
+int.cor.L <- temp
+
+temp.plot <- (
+  int.cor.L %>%
+    slice(1:500) %>%
+    ggplot(aes(
+      x = Genes,
+      y = Group,
+      fill = Intensity.z.score,
+      size = abs(Cell.line.corr),
+      text=paste0(
+        Genes,"<br>",
+        Group, "<br>",
+        "Log2 Intensity: ", round(Intensity,2), "<br>",
+        "Cell-line protein-mRNA \nPearson correlation: ", round(Cell.line.corr,2))
+    )) +
+    geom_point() +
+    geom_hline(yintercept = c(5.5, 10.5), linetype = 2) +
+    scale_fill_distiller(palette = "RdBu",limit=c(-limit,limit)) +
+    labs(x = NULL, 
+         y = NULL,
+         fill = "Intensity \nz-score") +
+    annotate(
+      "rect",
+      xmin = 0,
+      xmax = -1,
+      ymin = c(0, 5.5, 10.5),
+      ymax = c(5.5, 10.5, 16),
+      fill = RColorBrewer::brewer.pal("Greys", n = 3),
+      color = "black"
+    )+
+    theme(axis.text.x = element_text(angle = 45))
+) |>
+  ggplotly(tooltip="text") 
+
+
+layout(temp.plot, 
+       legend=list(
+         x = 0, y = 1, xanchor = "left", yanchor = "top"),
+       margin = list(l = 150))
+
 
 

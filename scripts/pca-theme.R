@@ -4,10 +4,10 @@ xlabvjust = 0.5
 ylabAngle = 0
 ylabhjust = 0.5
 ylabvjust = 0.5
-axisLabSize = 16
-titleLabSize = 16
-subtitleLabSize = 12
-captionLabSize = 12
+axisLabSize = 10
+titleLabSize = 12
+subtitleLabSize = 10
+captionLabSize = 10
 legendPosition = 'top'
 legendLabSize = 10
 legendIconSize = 3.0
@@ -17,20 +17,20 @@ theme_set(
     theme(
       legend.background=element_rect(),
       
-      plot.title=element_text(angle=0, size=16,
+      plot.title=element_text(angle=0, size=titleLabSize,
                               face='bold', vjust=1),
-      plot.subtitle=element_text(angle = 0, size = 12,
+      plot.subtitle=element_text(angle = 0, size = subtitleLabSize,
                                  face = 'plain', vjust = 1),
-      plot.caption=element_text(angle = 0, size = 12,
+      plot.caption=element_text(angle = 0, size = captionLabSize,
                                 face = 'plain', vjust = 1),
       
       axis.line = element_line(size=1.5, colour = 'black'),
       
-      axis.text.x=element_text(angle = xlabAngle, size = 16,
+      axis.text.x=element_text(angle = xlabAngle, size = axisLabSize,
                                hjust = xlabhjust, vjust = xlabvjust),
-      axis.text.y=element_text(angle = ylabAngle, size = 16,
+      axis.text.y=element_text(angle = ylabAngle, size = axisLabSize,
                                hjust = ylabhjust, vjust = ylabvjust),
-      axis.title=element_text(size=16),
+      axis.title=element_text(size=titleLabSize),
       
       legend.position=legendPosition,
       legend.direction = 'horizontal',
