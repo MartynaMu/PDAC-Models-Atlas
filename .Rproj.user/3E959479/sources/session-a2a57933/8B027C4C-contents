@@ -1,0 +1,155 @@
+# Pancreatic-cells-associated gene signatures
+
+```{r include=FALSE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = FALSE, fig.width = 12, message=FALSE, warning=FALSE)
+knitr::opts_knit$set(root.dir ="D:/R_projects_temp/book/book")
+options(knitr.duplicate.label = "allow")
+load("D:/R_projects/RR_proteomics/joint-matrices.RData")
+library(tidyverse)
+library(rmarkdown)
+library(ComplexHeatmap)
+library(grid)
+```
+
+## Normal pancreatic tissue gene signature - alpha, beta, delta and gamma cells
+
+MSigDB: M45029, M45030, M45032, M45031
+
+::: panel-tabset
+```{r norm.panc, message=FALSE, results="asis", fig.height=7}
+
+files <- list.files("data/GMTs/", 
+                    full.names = TRUE,
+                    pattern = "VANGURP")
+
+norm.panc <- lapply(files,clusterProfiler::read.gmt.wp)
+norm.panc <- data.table::rbindlist(norm.panc)
+
+# Panc-1
+cat("  \n### PANC-1 {-}  \n")
+df.panc %>% 
+            filter(rownames(df.panc) %in% norm.panc$gene) %>%
+            t() %>% 
+            scale() %>% 
+            t() %>% 
+            as.data.frame() %>%
+            drop_na() %>% 
+            Heatmap(show_row_names = TRUE,
+                    show_column_names = FALSE,
+                    show_row_dend = FALSE,
+                    cluster_columns = FALSE,
+                    column_split = annot_panc$Condition.L1,
+                    border = TRUE, 
+                    row_names_gp = gpar(size = 8),
+                    heatmap_legend_param = gpar(title = NULL))
+cat("  \n")
+
+# miapaca
+cat("  \n### MIA-PaCa-2 {-}  \n")
+df.miapaca %>% 
+            filter(rownames(df.miapaca) %in% norm.panc$gene) %>%
+            t() %>% 
+            scale() %>% 
+            t() %>% 
+            as.data.frame() %>%
+            drop_na() %>% 
+            Heatmap(show_row_names = TRUE,
+                    show_column_names = FALSE,
+                    show_row_dend = FALSE,
+                    cluster_columns = FALSE,
+                    column_split = annot_miapaca$Condition.L1,
+                    border = TRUE, 
+                    row_names_gp = gpar(size = 8),
+                    heatmap_legend_param = gpar(title = NULL))
+cat("  \n")
+
+# cfpac
+cat("  \n### CFPAC-1 {-}  \n")
+df.cfpac %>% 
+            filter(rownames(df.cfpac) %in% norm.panc$gene) %>%
+            t() %>% 
+            scale() %>% 
+            t() %>% 
+            as.data.frame() %>%
+            drop_na() %>% 
+            Heatmap(show_row_names = TRUE,
+                    show_column_names = FALSE,
+                    show_row_dend = FALSE,
+                    cluster_columns = FALSE,
+                    column_split = annot_cfpac$Condition.L1,
+                    border = TRUE, 
+                    row_names_gp = gpar(size = 8),
+                    heatmap_legend_param = gpar(title = NULL))
+cat("  \n")
+
+```
+:::
+
+## Pancreatic cancer gene signature
+
+MSigDB: M9726 - KEGG_PANCREATIC_CANCER
+
+::: panel-tabset
+```{r panc.canc, message=FALSE, results="asis", fig.height=7}
+
+panc.canc <- clusterProfiler::read.gmt.wp(gmtfile = "data/GMTs/KEGG_PANCREATIC_CANCER.v2024.1.Hs.gmt")
+
+# panc-1
+cat("  \n### PANC-1 {-}  \n")
+df.panc %>% 
+            filter(rownames(df.panc) %in% panc.canc$gene) %>%
+            t() %>% 
+            scale() %>% 
+            t() %>% 
+            as.data.frame() %>%
+            drop_na() %>% 
+            Heatmap(show_row_names = TRUE,
+                    show_column_names = FALSE,
+                    show_row_dend = FALSE,
+                    cluster_columns = FALSE,
+                    column_split = annot_panc$Condition.L1,
+                    border = TRUE, 
+                    row_names_gp = gpar(size = 8),
+                    heatmap_legend_param = gpar(title = NULL))
+cat("  \n")
+
+# MIAPACA
+cat("  \n### MIA-PaCa-2 {-}  \n")
+df.miapaca %>% 
+            filter(rownames(df.miapaca) %in% panc.canc$gene) %>%
+            t() %>% 
+            scale() %>% 
+            t() %>% 
+            as.data.frame() %>%
+            drop_na() %>% 
+            Heatmap(show_row_names = TRUE,
+                    show_column_names = FALSE,
+                    show_row_dend = FALSE,
+                    cluster_columns = FALSE,
+                    column_split = annot_miapaca$Condition.L1,
+                    border = TRUE, 
+                    row_names_gp = gpar(size = 8),
+                    heatmap_legend_param = gpar(title = NULL))
+cat("  \n")
+
+# cfpac
+cat("  \n### CFPAC-1 {-}  \n")
+df.cfpac %>% 
+            filter(rownames(df.cfpac) %in% panc.canc$gene) %>%
+            t() %>% 
+            scale() %>% 
+            t() %>% 
+            as.data.frame() %>%
+            drop_na() %>% 
+            Heatmap(show_row_names = TRUE,
+                    show_column_names = FALSE,
+                    show_row_dend = FALSE,
+                    cluster_columns = FALSE,
+                    column_split = annot_cfpac$Condition.L1,
+                    border = TRUE, 
+                    row_names_gp = gpar(size = 8),
+                    heatmap_legend_param = gpar(title = NULL))
+cat("  \n")
+
+```
+:::

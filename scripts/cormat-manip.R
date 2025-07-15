@@ -1,5 +1,7 @@
 temp <- prot.means %>% 
+  t() %>%
   scale() %>%
+  t() %>%
   as.data.frame() %>%
   rownames_to_column("Genes") %>% 
   pivot_longer(2:16,
@@ -34,8 +36,7 @@ temp <- temp |> left_join(temp2, by = join_by(Genes, Group))
 
 int.cor.L <- temp
 
-temp.plot <- (
-  int.cor.L %>%
+(int.cor.L %>%
     slice(1:500) %>%
     ggplot(aes(
       x = Genes,

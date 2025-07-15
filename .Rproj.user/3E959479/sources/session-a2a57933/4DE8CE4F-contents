@@ -1,7 +1,38 @@
+annot_col_means <- annot_col %>% distinct()
+rownames(annot_col_means) <- colnames(prot.means)
+names(annot_colors) <- c("Model.detail", "Model.gen","Cell.line")
+
 pheatmap::pheatmap(prot.means, 
                    scale="row", 
                    clustering_distance_cols = "correlation", 
                    clustering_distance_rows = "correlation", 
                    clustering_method = "complete", 
                    show_rownames = FALSE,
-                   col=colorRampPalette(c("blue","white","red"))(100))
+                   col=colorRampPalette(c("blue","white","red"))(100),
+                   annotation_col = annot_col_means,
+                   annotation_colors = annot_colors,
+                   annotation_names_col = FALSE,
+                   cutree_rows = 5,
+                   cutree_cols = 3)
+
+
+prot.means %>% 
+  t() %>%
+  scale() %>%
+  t() %>%
+ComplexHeatmap::Heatmap(col = colorRampPalette(c("blue","white","red"))(100),
+                        clustering_distance_rows = "pearson",
+                        clustering_distance_columns = "pearson",
+                        clustering_method_columns = "complete",
+                        clustering_method_rows = "complete",
+                        row_km = 5,
+                        column_km = 3,
+                        show_row_names = FALSE,
+                  #      border = TRUE, 
+                   #     heatmap_legend_param = gpar(title = NULL),
+                        top_annotation = HeatmapAnnotation(
+                          box = anno_density(prot.means, type="violin", height = unit(3,"cm")),
+                          Cell.line = annot_col_means$Condition.L3,
+                          Model.gen = annot_col_means$Condition.L2,
+                          Model.detail = annot_col_means$Condition.L1,
+                          col = annot_colors))
